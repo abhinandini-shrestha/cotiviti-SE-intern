@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Assistant for Payment Integrity and HCC Coding Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper:#EEF1EF;
+    --panel:#FFFFFF;
+    --ink:#1F2A2E;
+    --ink-soft:#5B6B6E;
+    --line:#D7DEDA;
+    --teal:#0F6F66;
+    --teal-soft:#E3F1EE;
+    --amber:#B5670F;
+    --amber-soft:#FBF0E1;
+    --red:#B0332C;
+    --red-soft:#FAEAE8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .brand-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--teal);margin:0 0 4px;}
+  h1{font-family:'Spectral',serif;font-weight:700;font-size:28px;margin:0;letter-spacing:-.01em;}
+  .subtitle{font-size:13px;color:var(--ink-soft)x;margin-top:6px;max-width:520px;}
+  .badge-poc{font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--ink);
+    padding:4px 10px;border-radius:2px;color:var(--ink-soft);white-space:nowrap;}
+
+  /* pipeline stepper */
+  .pipeline{display:flex;gap:0;margin-bottom:26px;border:1px solid var(--line);
+    background:var(--panel);border-radius:6px;overflow:hidden;}
+  .step{flex:1;padding:12px 16px;position:relative;border-right:1px solid var(--line);
+    transition:background .3s;}
+  .step:last-child{border-right:none;}
+  .step .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .step .t{font-weight:600;font-size:13.5px;margin-top:2px;}
+  .step.active{background:var(--teal-soft);}
+  .step.active .n{color:var(--teal);}
+  .step.done .n:after{content:" ✓";color:var(--teal);}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:880px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 20px;}
+  .panel h2{font-family:'Spectral',serif;font-size:15px;margin:0 0 4px;font-weight:600;}
+  .panel .hint{font-size:11.5px;color:var(--ink-soft);margin-bottom:14px;}
+
+  select, textarea{width:100%;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;
+    border:1px solid var(--line);border-radius:5px;padding:9px 10px;color:var(--ink);background:#FCFDFC;}
+  select{margin-bottom:12px;cursor:pointer;}
+  label.field-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-soft);display:block;margin-bottom:5px;font-family:'IBM Plex Mono',monospace;}
+  .dx-code{font-family:'IBM Plex Mono',monospace;background:var(--teal-soft);color:var(--teal);
+    padding:2px 8px;border-radius:3px;font-size:12.5px;font-weight:600;display:inline-block;margin-bottom:10px;}
+  textarea{min-height:150px;resize:vertical;line-height:1.55;}
+
+  button.run{margin-top:14px;width:100%;background:var(--ink);color:#fff;border:none;
+    padding:12px;border-radius:6px;font-size:13.5px;font-weight:600;cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif;letter-spacing:.01em;transition:opacity .15s;}
+  button.run:hover{opacity:.85;}
+  button.run:disabled{opacity:.5;cursor:default;}
+
+  .evidence-item{border:1px solid var(--line);border-left:4px solid var(--teal);
+    border-radius:5px;padding:10px 12px;margin-bottom:10px;background:#FCFEFD;transition:box-shadow .2s;}
+  .evidence-item.lit{box-shadow:0 0 0 2px var(--teal);}
+  .evidence-item .src{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--teal);
+    text-transform:uppercase;letter-spacing:.05em;}
+  .evidence-item .body{font-size:12.8px;margin-top:4px;color:var(--ink);line-height:1.5;}
+  .score-bar{height:4px;background:var(--line);border-radius:2px;margin-top:8px;overflow:hidden;}
+  .score-fill{height:100%;background:var(--teal);}
+
+  .decision-card{border-radius:8px;padding:16px 18px;margin-top:4px;}
+  .decision-card.supported{background:var(--teal-soft);border:1px solid var(--teal);}
+  .decision-card.insufficient{background:var(--red-soft);border:1px solid var(--red);}
+  .decision-card.review{background:var(--amber-soft);border:1px solid var(--amber);}
+  .decision-label{font-family:'Spectral',serif;font-weight:700;font-size:16px;}
+  .supported .decision-label{color:var(--teal);}
+  .insufficient .decision-label{color:var(--red);}
+  .review .decision-label{color:var(--amber);}
+  .confidence{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .rationale{font-size:13px;line-height:1.65;margin-top:10px;}
+  .cite-chip{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    background:var(--ink);color:#fff;border-radius:10px;padding:0px 6px;margin:0 1px;cursor:pointer;
+    vertical-align:2px;}
+  .cite-chip:hover{background:var(--teal);}
+
+  .reviewer-row{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .reviewer-row .rlabel{font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    text-transform:uppercase;color:var(--ink-soft);letter-spacing:.06em;margin-right:4px;}
+  .rbtn{border:1px solid var(--ink);background:#fff;padding:7px 14px;border-radius:5px;
+    font-size:12.5px;cursor:pointer;font-weight:500;}
+  .rbtn.approve:hover{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .rbtn.override:hover{background:var(--amber);border-color:var(--amber);color:#fff;}
+  .final-note{font-size:12px;color:var(--ink-soft);margin-left:auto;font-style:italic;}
+
+  .placeholder{color:var(--ink-soft);font-size:12.5px;padding:20px 0;text-align:center;}
+  .loading{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--teal);
+    display:flex;align-items:center;gap:8px;padding:10px 0;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:pulse 1s infinite ease-in-out;}
+  .dot:nth-child(2){animation-delay:.15s;} .dot:nth-child(3){animation-delay:.3s;}
+  @keyframes pulse{0%,100%{opacity:.25;}50%{opacity:1;}}
+
+  footer{margin-top:30px;font-size:11px;color:var(--ink-soft);text-align:center;font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="brand-eyebrow">Payment Integrity · Decision Support</p>
+      <h1>AI Assistant for Payment Integrity and HCC Coding Review</h1>
+      <p class="subtitle">Retrieves supporting coding guidance for a submitted diagnosis, then grounds an AI recommendation in only that retrieved evidence — reviewer makes the final call.</p>
+    </div>
+  </header>
+
+  <!-- <div class="pipeline">
+    <div class="step" id="step1"><div class="n">01</div><div class="t">Retrieve Evidence</div></div>
+    <div class="step" id="step2"><div class="n">02</div><div class="t">Ground &amp; Reason</div></div>
+    <div class="step" id="step3"><div class="n">03</div><div class="t">Reviewer Decision</div></div>
+  </div> -->
+
+  <div class="grid">
+    <!-- LEFT: CASE INPUT -->
+    <div class="panel">
+      <h2>Claim Under Review</h2>
+      <p class="hint">Choose a sample claim, or edit the note freely.</p>
+
+      <label class="field-label">Sample Case</label>
+      <select id="caseSelect"></select>
+
+      <div id="dxCodeDisplay" class="dx-code">—</div>
+
+      <label class="field-label">Clinical Note Excerpt</label>
+      <textarea id="noteText"></textarea>
+
+      <button class="run" id="runBtn">Run Evidence Review</button>
+    </div>
+
+    <!-- RIGHT: RETRIEVED EVIDENCE -->
+    <div class="panel">
+      <h2>Retrieved Evidence</h2>
+      <p class="hint">Matched from a small demonstration coding-standards corpus using transparent keyword retrieval.</p>
+      <div id="evidenceList"><div class="placeholder">Run a review to retrieve supporting documentation.</div></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:20px;">
+    <h2>AI-Assisted Decision</h2>
+    <p class="hint">Generated locally from the retrieved evidence — every rationale links back to a source snippet.</p>
+    <div id="decisionArea"><div class="placeholder">No decision yet.</div></div>
+  </div>
+
+  <footer>This is a prototype. Built to show RAG retrieval + grounded generation + human-in-the-loop review.</footer>
+</div>
+
+<script>
+// ---------- MOCK KNOWLEDGE BASE (the "retrievable" corpus) ----------
+const CORPUS = [
+  {
+    id:"E1", src:"CMS-HCC Documentation Standard §2.1",
+    text:"A diagnosis is valid for risk adjustment only if documented via a face-to-face encounter and coded to the highest level of specificity, evidenced through MEAT: Monitor, Evaluate, Assess/Address, or Treat.",
+    keywords:["monitor","evaluate","assess","treat","face-to-face","specificity","encounter","meat"]
+  },
+  {
+    id:"E2", src:"MEAT Criteria — Sufficiency Detail",
+    text:"A diagnosis listed only on a problem list, without evidence of clinical evaluation, monitoring, or an active treatment plan in the current note, does not meet documentation sufficiency for HCC capture.",
+    keywords:["problem list","pmh","past medical history","no plan","monitoring","evaluation","review"]
+  },
+  {
+    id:"E3", src:"E11.22 Coding Guidance — Diabetes with CKD",
+    text:"Diabetes with chronic kidney disease (E11.22) requires an explicit documented linkage between the two conditions (e.g., 'diabetic nephropathy' or 'CKD due to diabetes'), not merely two conditions listed separately.",
+    keywords:["diabetes","ckd","kidney","nephropathy","linkage","renal","creatinine","e11.22"]
+  },
+  {
+    id:"E4", src:"RADV Audit — Common Denial Pattern",
+    text:"Progress notes that reference a diagnosis only within the historical or past-medical-history section, with no current assessment or plan, are frequently denied on RADV audit.",
+    keywords:["history of","pmh","past medical history","today for","follow up","historical"]
+  },
+  {
+    id:"E5", src:"Annual Recapture Requirement",
+    text:"HCC-relevant diagnoses must be re-documented with supporting evaluation at least once each calendar year to remain valid for risk-adjustment payment.",
+    keywords:["annual","recapture","each year","yearly","follow up","recheck"]
+  }
+];
+
+// ---------- SAMPLE CASES ----------
+const CASES = [
+  {
+    label:"Case A — Well-documented diabetic CKD",
+    dx:"E11.22 — Type 2 diabetes mellitus with diabetic chronic kidney disease",
+    note:"Patient with T2DM and diabetic nephropathy, stage 3 CKD. A1c 8.1% today. Continuing metformin and losartan. Renal function monitored via quarterly labs; nephrology referral placed for co-management. Will recheck creatinine and A1c in 3 months."
+  },
+  {
+    label:"Case B — Problem-list only, no current plan",
+    dx:"E11.22 — Type 2 diabetes mellitus with diabetic chronic kidney disease",
+    note:"PMH: Diabetes, CKD, hypertension, hyperlipidemia. Patient here today for follow up of hypertension. Blood pressure well controlled on lisinopril. No other complaints today."
+  },
+  {
+    label:"Case C — Ambiguous linkage, borderline",
+    dx:"E11.22 — Type 2 diabetes mellitus with diabetic chronic kidney disease",
+    note:"Diabetes reviewed today, patient counseled on diet and exercise, A1c pending. Creatinine noted slightly elevated on recent labs; will recheck at next visit. No clear statement connecting kidney findings to diabetes."
+  }
+];
+
+// populate dropdown
+const caseSelect = document.getElementById("caseSelect");
+CASES.forEach((c,i)=>{
+  const o=document.createElement("option"); o.value=i; o.textContent=c.label;
+  caseSelect.appendChild(o);
+});
+function loadCase(i){
+  const c = CASES[i];
+  document.getElementById("dxCodeDisplay").textContent = c.dx;
+  document.getElementById("noteText").value = c.note;
+}
+caseSelect.addEventListener("change", e=>loadCase(e.target.value));
+loadCase(0);
+
+// ---------- RETRIEVAL (simple transparent keyword scoring) ----------
+function retrieve(noteText, dxText){
+  const haystack = (noteText + " " + dxText).toLowerCase();
+  const scored = CORPUS.map(doc=>{
+    let hits = 0;
+    doc.keywords.forEach(k=>{ if(haystack.includes(k)) hits++; });
+    return {...doc, score: hits};
+  }).filter(d=>d.score>0)
+    .sort((a,b)=>b.score-a.score);
+  return scored.slice(0,4);
+}
+
+function renderEvidence(list){
+  const el = document.getElementById("evidenceList");
+  if(list.length===0){ el.innerHTML = '<div class="placeholder">No matching evidence found.</div>'; return; }
+  const maxScore = Math.max(...list.map(d=>d.score));
+  el.innerHTML = list.map(d=>`
+    <div class="evidence-item" id="ev-${d.id}">
+      <div class="src">${d.id} · ${d.src}</div>
+      <div class="body">${d.text}</div>
+      <div class="score-bar"><div class="score-fill" style="width:${(d.score/maxScore*100).toFixed(0)}%"></div></div>
+    </div>
+  `).join("");
+}
+
+function litUp(id){
+  document.querySelectorAll(".evidence-item").forEach(e=>e.classList.remove("lit"));
+  const target = document.getElementById("ev-"+id);
+  if(target){ target.classList.add("lit"); target.scrollIntoView({behavior:"smooth", block:"nearest"}); }
+}
+
+// ---------- PIPELINE STEP UI ----------
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    //const el = document.getElementById("step"+i);
+    ///el.classList.remove("active");
+    //if(i<n) el.classList.add("done"); else el.classList.remove("done");
+    //if(i===n) el.classList.add("active");
+  });
+}
+function resetSteps(){ [1,2,3].forEach(i=>{const el=document.getElementById("step"+i); }); }
+
+// ---------- GROUNDED GENERATION (fully local prototype) ----------
+// This prototype runs entirely in the browser. It uses transparent rules over
+// the retrieved evidence so the demo works without an API key or backend.
+function analyseCase(note, dx, evidence){
+  const text = note.toLowerCase();
+  const hasDiabetes = /diabetes|t2dm|diabetic/.test(text);
+  const hasKidney = /ckd|kidney|renal|nephropathy|creatinine/.test(text);
+  const explicitLink = /diabetic\s+(nephropathy|kidney disease|ckd)|ckd\s+(due to|secondary to)\s+diabetes|kidney disease\s+(due to|secondary to)\s+diabetes/.test(text);
+  const activeCare = /monitor|monitored|evaluate|reviewed|assess|assessment|treat|treatment|continuing|continue|referral|recheck|follow[- ]?up|counsel|a1c|medication|metformin|losartan/.test(text);
+  const historicalOnly = /(pmh|past medical history|problem list|history of)/.test(text) && !activeCare;
+
+  let decision, confidence, rationale;
+  const ids = new Set(evidence.map(e=>e.id));
+  const cite = id => ids.has(id) ? `[${id}]` : '';
+
+  if(hasDiabetes && hasKidney && explicitLink && activeCare){
+    decision = 'Sufficiently Supported';
+    confidence = 92;
+    rationale = `The note explicitly links diabetes with kidney disease and documents active monitoring or treatment. This aligns with the linkage requirement ${cite('E3')} and MEAT-based documentation expectations ${cite('E1')}.`;
+  } else if(historicalOnly){
+    decision = 'Insufficient Documentation';
+    confidence = 90;
+    rationale = `The conditions appear only as historical or problem-list entries without a current assessment or treatment plan. Problem-list-only documentation is insufficient ${cite('E2')}, and historical-only diagnoses are a common audit denial pattern ${cite('E4')}.`;
+  } else if(hasDiabetes && hasKidney && !explicitLink){
+    decision = 'Needs Reviewer Attention';
+    confidence = 84;
+    rationale = `The note references both diabetes and kidney findings, but it does not clearly connect the conditions. The coding guidance requires explicit linkage for E11.22 ${cite('E3')}; reviewer validation is therefore needed.`;
+  } else {
+    decision = 'Needs Reviewer Attention';
+    confidence = 70;
+    rationale = `The available documentation does not provide enough clearly matched evidence for a definitive automated recommendation. Review the retrieved standards and confirm whether current evaluation, assessment, monitoring, or treatment is documented ${cite('E1')}.`;
+  }
+  return {decision, confidence, rationale};
+}
+
+async function runReview(){
+  const btn = document.getElementById("runBtn");
+  btn.disabled = true; btn.textContent = "Running…";
+  resetSteps(); setStep(1);
+
+  const note = document.getElementById("noteText").value;
+  const dx = document.getElementById("dxCodeDisplay").textContent;
+  const decisionArea = document.getElementById("decisionArea");
+  decisionArea.innerHTML = '<div class="placeholder">Waiting on evidence retrieval…</div>';
+
+  await new Promise(r=>setTimeout(r,350));
+  const evidence = retrieve(note, dx);
+  renderEvidence(evidence);
+
+  setStep(2);
+  decisionArea.innerHTML = '<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> grounding recommendation in retrieved evidence…</div>';
+  await new Promise(r=>setTimeout(r,500));
+
+  if(evidence.length===0){
+    decisionArea.innerHTML = '<div class="placeholder">No supporting evidence retrieved — insufficient basis to generate a grounded recommendation. Route directly to reviewer.</div>';
+    setStep(3);
+    btn.disabled=false; btn.textContent="Run Evidence Review";
+    return;
+  }
+
+  const parsed = analyseCase(note, dx, evidence);
+  renderDecision(parsed);
+  setStep(3);
+  btn.disabled=false; btn.textContent="Run Evidence Review";
+}
+
+function renderDecision(parsed){
+  const decisionArea = document.getElementById("decisionArea");
+  const map = {
+    "Sufficiently Supported":"supported",
+    "Insufficient Documentation":"insufficient",
+    "Needs Reviewer Attention":"review"
+  };
+  const cls = map[parsed.decision] || "review";
+
+  let rationaleHtml = (parsed.rationale||"").replace(/\[(E\d)\]/g, (m,id)=>
+    `<span class="cite-chip" onclick="litUp('${id}')">${id}</span>`);
+
+  decisionArea.innerHTML = `
+    <div class="decision-card ${cls}">
+      <div class="decision-label">${parsed.decision}</div>
+      <div class="confidence">PROTOTYPE CONFIDENCE: ${parsed.confidence}%</div>
+      <div class="rationale">${rationaleHtml}</div>
+      <div class="reviewer-row">
+        <span class="rlabel">Reviewer action</span>
+        <button class="rbtn approve" onclick="reviewerAct(true)">Approve</button>
+        <button class="rbtn override" onclick="reviewerAct(false)">Override</button>
+        <span class="final-note" id="finalNote"></span>
+      </div>
+    </div>
+  `;
+}
+
+function reviewerAct(approved){
+  const note = document.getElementById("finalNote");
+  note.textContent = approved
+    ? "Reviewer approved — prototype recommendation accepted as final."
+    : "Reviewer overrode — human judgment recorded as final decision.";
+}
+
+document.getElementById("runBtn").addEventListener("click", runReview);
+</script>
+</body>
+</html>
