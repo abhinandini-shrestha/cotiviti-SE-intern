@@ -28,13 +28,8 @@ The proposed solution retrieves relevant clinical documentation, coding standard
 - Hackathon Proof of Concept
 - Slide Presentation
 - Video Recording
-
-## Technologies
-
-- Python
-- Streamlit
-- Retrieval-Augmented Generation (RAG)
-- Large Language Models (LLMs)
+  
+**Note:** If the demo video does not play directly from GitHub, you can watch it on YouTube: ([https://www.youtube.com/watch?v=10PY9BgPHb0](https://www.youtube.com/watch?v=10PY9BgPHb0))
 
 ## Disclaimer
 
